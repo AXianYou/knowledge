@@ -380,3 +380,337 @@ mybatis-plus:
       log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 ```
 
+
+
+#### **分页查询：**
+
+```java
+@Test
+    void pageSelect(){
+
+        IPage page = new Page(1,5);
+        bookDao.selectPage(page,null);
+    }
+```
+
+注意：  想要使用分页查询时，就要配对相应的拦截器
+
+分页操作依赖MyBatisPlus 分页拦截器实现功能
+
+- 创建配置包 创建相应的拦截器
+- 需要不同拦截器时直接在其中增加即可。
+- 返回一个interceptor
+
+```java
+@Configuration
+public class MPConfig {
+    @Bean
+    public MybatisPlusInterceptor mybatisPlusInterceptor(){
+        //定义Mp 拦截器
+        MybatisPlusInterceptor mybatisPlusInterceptor = new MybatisPlusInterceptor();
+        // 添加具体的拦截器
+        mybatisPlusInterceptor.addInnerInterceptor(new PaginationInnerInterceptor());
+
+        // 增加其他的拦截器
+//        mybatisPlusInterceptor.addInnerInterceptor(new ...);
+
+        return mybatisPlusInterceptor;
+    }
+}
+```
+
+![](./images/6.png)
+
+- 分页查询中page存储了诸多数据  可进行查看
+
+![](./images/5.png)
+
+
+
+#### **条件查询（querryWrapper(); ）：**
+
+- bookQueryWrapper.select 中 name 为字段名  仙 为中间的内同内容
+
+```java
+@Test
+    void selectByqw(){
+        QueryWrapper<Book> bookQueryWrapper = new QueryWrapper<>();
+        bookQueryWrapper.like("name","仙");
+        
+        System.out.println(bookDAO.selectList(bookQueryWrapper));
+    }
+```
+
+****
+
+**LambdaQueryWrapper：**
+
+```java
+ @Test
+    void selectLamQW() {
+
+        String name = "1";
+        LambdaQueryWrapper<Book> lqw = new LambdaQueryWrapper<Book>();
+            lqw.like(name != null,Book::getId, name);
+            bookDAO.selectList(lqw);
+        
+        System.out.println(bookDAO.selectList(lqw));
+    }
+```
+
+出现错误时，将 MyBatis—Plus 版本改为 3.4.2 即可
+
+```java
+org.mybatis.spring.MyBatisSystemException: nested exception is org.apache.ibatis.builder.BuilderException: Error evaluating expression 'ew.sqlSegment != null and ew.sqlSegment != '' and ew.nonEmptyOfWhere'. Cause: org.apache.ibatis.ognl.OgnlException: sqlSegment [java.lang.ExceptionInInitializerError]
+
+```
+
+
+
+### **1.4.2、业务层：**
+
+- service
+
+```java
+public interface BookService {
+    Boolean saveBook(Book book);
+
+    Boolean deleteBook(Integer id);
+
+    Boolean updateBook(Book book);
+
+    Book getById(Integer id);
+
+    List<Book> getAllBooks();
+}
+```
+
+![](./images/7.png)
+
+- serviceImpl
+
+```java
+@Service
+public class BookServiceImpl implements BookService {
+
+    @Autowired
+    private BookDao bookDao;
+    @Override
+    public Boolean saveBook(Book book) {
+        return bookDao.insert(book) > 0;
+    }
+
+    @Override
+    public Boolean deleteBook(Integer id) {
+        return bookDao.deleteById(id) > 0;
+    }
+
+    @Override
+    public Boolean updateBook(Book book) {
+        return bookDao.updateById(book) > 0;
+    }
+
+    @Override
+    public Book getById(Integer id) {
+        return bookDao.selectById(id);
+    }
+
+    @Override
+    public List<Book> getAllBooks() {
+        return bookDao.selectList(null);
+    }
+}
+```
+
+![](./images/8.png)
+
+- 测试类 BookServiceTestCase
+
+```java
+@SpringBootTest
+public class BookServiceTestCase {
+    @Autowired
+    private BookService bookService;
+
+    @Test
+    void testGetById(){
+
+        System.out.println(bookService.getById(4));
+    }
+
+    @Test
+    void testUpdate(){
+        Book book = new Book();
+        book.setId(1);
+        book.setName("测试数据222 ");
+        book.setType("测试数据222");
+        book.setDescription("测试数据222");
+
+        bookService.updateBook(book);
+    }
+
+    @Test
+    void testSave(){
+        Book book = new Book();
+        book.setName("测试数据123");
+        book.setType("测试数据123");
+        book.setDescription("测试数据123");
+        bookService.saveBook(book);
+    }
+
+    @Test
+    void testDelete(){
+        bookService.deleteBook(5);
+    }
+}
+```
+
+![](./images/9.png)
+
+### 1.4.3、表现层（Controller）：
+
+- Dao
+
+```java
+@Mapper
+public interface BookDao extends BaseMapper<Book> {
+
+}
+
+```
+
+- Service
+
+```java
+public interface BookService {
+    Boolean saveBook(Book book);
+
+    Boolean deleteBook(Integer id);
+
+    Boolean updateBook(Book book);
+
+    Book getById(Integer id);
+
+    List<Book> getAllBooks();
+}
+```
+
+- serviceImpl
+
+```java
+@Service
+public class BookServiceImpl implements BookService {
+
+    @Autowired
+    private BookDao bookDao;
+    @Override
+    public Boolean saveBook(Book book) {
+        return bookDao.insert(book) > 0;
+    }
+
+    @Override
+    public Boolean deleteBook(Integer id) {
+        return bookDao.deleteById(id) > 0;
+    }
+
+    @Override
+    public Boolean updateBook(Book book) {
+        return bookDao.updateById(book) > 0;
+    }
+
+    @Override
+    public Book getById(Integer id) {
+        return bookDao.selectById(id);
+    }
+
+    @Override
+    public List<Book> getAllBooks() {
+        return bookDao.selectList(null);
+    }
+}
+```
+
+- Controller
+
+```java
+@RestController
+@RequestMapping("/books")
+public class BookController {
+
+    @Autowired
+    private BookService bookService;
+
+    @GetMapping("/getAllBooks")
+    public List<Book> getAllBooks(){
+       return bookService.getAllBooks();
+    }
+
+    @PostMapping("/insert")
+    public boolean saveBook(@RequestBody Book book){
+//        Book book = new Book();
+//        book.setName("测试数据444");
+//        book.setType("测试数据555");
+//        book.setDescription("测试数据666");
+        return bookService.saveBook(book);
+    }
+
+
+    @PostMapping("/update")
+    public boolean updateBook(@RequestBody Book book){
+//        Book book = new Book();
+//        book.setId(id);
+//        book.setName("ceshixi");
+//        book.setType("1111");
+//        book.setDescription("ooooo");
+        return bookService.updateBook(book);
+    }
+
+    @PostMapping("/delete/{id}")
+    public boolean deleteBookById(@PathVariable Integer id){
+        return bookService.deleteBook(id);
+    }
+
+    @GetMapping("/select/{id}")
+    public Book selectById(@PathVariable Integer id){
+        return bookService.getById(id);
+    }
+
+}
+```
+
+使用postman 进行调用
+
+![](./images/10.png)
+
+
+
+
+
+
+
+
+
+英文状态下 
+
+![](./images/11.png)
+
+
+
+
+
+这样图片就能上传上来了  能够便于保存  如果直接复制进来会造成一个问题  当你的文件要移动的时候  图片可能会找不到    ./images/11.png 这个是图片路径  不进行手写的的话  
+
+
+
+
+
+![image-20220815131334348](C:\Users\yilon\Desktop\All\knowledge\上传知识点git\springboot.assets\image-20220815131334348.png)
+
+他会默认保存在C:\Users\yilon\Desktop\All\knowledge\上传知识点git\springboot.assets\image-20220815131334348.png
+
+
+
+我将文件上传一下可以看一下   最常用的是github
+
+
+
