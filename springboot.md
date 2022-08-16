@@ -688,29 +688,3 @@ public class BookController {
 
 
 
-
-
-英文状态下 
-
-![](./images/11.png)
-
-
-
-
-
-这样图片就能上传上来了  能够便于保存  如果直接复制进来会造成一个问题  当你的文件要移动的时候  图片可能会找不到    ./images/11.png 这个是图片路径  不进行手写的的话  
-
-
-
-
-
-![image-20220815131334348](C:\Users\yilon\Desktop\All\knowledge\上传知识点git\springboot.assets\image-20220815131334348.png)
-
-他会默认保存在C:\Users\yilon\Desktop\All\knowledge\上传知识点git\springboot.assets\image-20220815131334348.png
-
-
-
-我将文件上传一下可以看一下   最常用的是github
-
-
-
