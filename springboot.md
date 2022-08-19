@@ -682,9 +682,158 @@ public class BookController {
 
 ![](./images/10.png)
 
+- 使用QueryWrapper 对象封装查询条件
+- 推荐使用LambdaQueryWrapper 对下那个
+- 所有查询操作封装成方法调用
+- 查询条件支持动态条件拼装
 
 
 
+**表现层消息一致性处理：	**
+
+![](./images/12.png)
+
+需要统一格式处理。
+
+![](./images/11.png)
+
+- 设计表现层返回结果的模型类，用于后端与前端进行数据格式同意，也成为前后端数据协议
+
+步骤：  
+
+- 创建utils 工具包 创建R 类
+
+```java
+@Data
+public class R {
+    private Boolean flag;
+    private Object data;
+
+    public R() {
+    }
+
+    public R(Boolean flag) {
+        this.flag = flag;
+    }
+
+    public R(Boolean flag,Object data) {
+        this.flag = flag;
+        this.data = data;
+    }
+}
+```
+
+- 修改Controller 文件
+
+```java
+@RestController
+@RequestMapping("/books")
+public class BookController {
+
+    @Autowired
+    private BookService bookService;
+
+    @GetMapping("/getAllBooks")
+    public R getAllBooks(){
+       return new R(true,bookService.getAllBooks());
+    }
+
+    @PostMapping("/insert")
+    public R saveBook(@RequestBody Book book){
+
+//        Book book = new Book();
+//        book.setName("测试数据444");
+//        book.setType("测试数据555");
+//        book.setDescription("测试数据666");
+//        return bookService.saveBook(book);
+
+        return new R(bookService.saveBook(book));
+    }
+
+
+    @PostMapping("/update")
+    public R updateBook(@RequestBody Book book){
+//        Book book = new Book();
+//        book.setId(id);
+//        book.setName("ceshixi");
+//        book.setType("1111");
+//        book.setDescription("ooooo");
+        return new R(bookService.updateBook(book));
+    }
+
+    @PostMapping("/delete/{id}")
+    public R deleteBookById(@PathVariable Integer id){
+        return new R(bookService.deleteBook(id));
+    }
+
+    @GetMapping("/select/{id}")
+    public R selectById(@PathVariable Integer id){
+
+        return new R(true,bookService.getById(id));
+    }
+
+}
+```
+
+- 查询结果
+
+![](./images/13.png)
+
+小结:
+
+- 设计统一的返回值结果类型便于前端开发读取数据
+- 返回值结果类型可以根据需求自行设定，没有固定格式
+- 返回值结果模型类用于后端与前端进行数据格式统一，也成为前后端数据协议
+
+### 1.4.4、异常处理机制：
+
+- 在utils 包下创建 ProjectExceptionAdvice 类
+
+```java
+@RestControllerAdvice
+public class ProjectExceptionAdvice {
+
+    @ExceptionHandler
+    public R doException(Exception ex){
+        ex.printStackTrace();
+        return new R(false,"服务器异常");
+    }
+}
+```
+
+- 在R 中增加新字段 msg ，再增加新的构造器
+
+```java
+private String msg;
+
+
+public R(Boolean flag,String msg){
+        this.flag = flag;
+        this.msg = msg;
+    }
+```
+
+## 1.5、日志：
+
+作用：
+
+- 编程时调试代码
+- 运营时记录信息
+  - 记录日常运营重要信息（峰值流量、平均响应时长）
+  - 记录应用报错信息（错误堆栈）
+  - 记录运维过程数据（扩容、宕机、...）
+- 日志级别：
+  - TRACE： 运行堆栈信息，使用率低
+  - DEBUG： 调式代码使用
+  - INFO： 记录运维过程数据
+  - WARN： 记录运维过程报警数据
+  - ERROR： 记录错误堆栈信息
+  - FATAL： 灾难信息，合并入ERROR
 
 
 
+# 二、原理篇
+
+## 2.1、bean：
+
+### 2.1.1、bean的加载方式：
