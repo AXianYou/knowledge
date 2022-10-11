@@ -42,7 +42,7 @@ public static void main(String[] args) {
 
 - 简介：
   - REST ： 表现形式状态转换
-  - ![](./images/1.png)
+  - ![](images/1.png)
 
 - 优点：
   - 隐藏资源访问行为，无法通过地址得知资源是如何操作
